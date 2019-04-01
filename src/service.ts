@@ -5,17 +5,25 @@ import * as bcrypt from 'bcrypt';
 import * as express from 'express';
 import getPort from 'get-port';
 import * as helmet from 'helmet';
-import {Db, MongoClient} from 'mongodb';
+import {Db, MongoClient, ObjectId} from 'mongodb';
 import * as passport from 'passport';
 import {ExtractJwt, Strategy as JwtStrategy, VerifiedCallback} from 'passport-jwt';
 import {Strategy as LocalStrategy} from 'passport-local';
 import * as redis from 'redis';
 
+import bodyParser = require('body-parser');
 import {CACHED_USER_KEY, TASK_DB_NAME, USER_COLLECTION} from './constants';
 import {BaseController} from './controllers/BaseController';
 import Controller from './models/Controller';
 import {HttpError, NotAcceptable, NotAuthorized} from './models/HttpErrors';
-import {Middleware, PublicUserModel, RequestContext, ServiceInterface, UserModel} from './types';
+import {
+    Middleware,
+    Parsers,
+    PublicUserModel,
+    RequestContext,
+    ServiceInterface,
+    UserModel,
+} from './types';
 
 export interface ServiceOptions {
     host: string;
@@ -25,6 +33,13 @@ export interface ServiceOptions {
 const DEFAULT_PORT = 3000;
 const DEFAULT_HOST = 'localhost';
 
+function getElapsedTime(startTime: [number, number]) {
+    const elapsedTime = process.hrtime(startTime);
+    // tslint:disable-next-line:no-magic-numbers
+    const elapsedTimeInMs = elapsedTime[0] * 1000 + elapsedTime[1] / 1e6;
+    return elapsedTimeInMs;
+}
+
 export default class Service implements ServiceInterface {
     public app: express.Application;
     public authMiddleware: Middleware;
@@ -32,6 +47,7 @@ export default class Service implements ServiceInterface {
     public db: Db;
     public hostname: string;
     public loginMiddleware: Middleware;
+    public parsers: {[key: string]: Middleware} = {};
     public port: number;
     public server: Server;
     private appOptions: ServiceOptions;
@@ -50,20 +66,57 @@ export default class Service implements ServiceInterface {
      */
     public async boot() {
         this.app = express();
+        // setup logging
+        this.app.use((req, res, next) => {
+            const startTime = process.hrtime();
+            res.on('finish', () => {
+                const elapsedTime = getElapsedTime(startTime);
+                console.log({
+                    namespace: 'task-service.service.request.finished',
+                    context: {
+                        time: elapsedTime,
+                        status: res.statusCode,
+                        url: req.originalUrl,
+                    },
+                });
+            });
+            res.on('error', err => {
+                const elapsedTime = getElapsedTime(startTime);
+                console.error({
+                    namespace: 'task-service.service.request.error',
+                    context: {
+                        error: err,
+                        time: elapsedTime,
+                        status: res.statusCode,
+                        url: req.originalUrl,
+                    },
+                });
+            });
+            next();
+        });
         this.app.use(helmet());
+
+        /**
+         * Set up some body parsers
+         */
+        this.parsers[Parsers.JSON] = bodyParser.json();
 
         /**
          * Setup MongoDB
          */
         await new Promise((resolve, reject) => {
-            MongoClient.connect(process.env.TASKDB_URL as string, (err, client: MongoClient) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    this.db = client.db(TASK_DB_NAME);
-                    resolve();
-                }
-            });
+            MongoClient.connect(
+                process.env.TASKDB_URL as string,
+                {useNewUrlParser: true},
+                (err, client: MongoClient) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        this.db = client.db(TASK_DB_NAME);
+                        resolve();
+                    }
+                },
+            );
         });
 
         /**
@@ -71,7 +124,7 @@ export default class Service implements ServiceInterface {
          */
         await new Promise((resolve, reject) => {
             this.cache = redis.createClient({
-                url: process.env.CACHE_URL,
+                url: process.env.REDIS_URL,
             });
 
             this.cache.on('error', err => {
@@ -91,8 +144,8 @@ export default class Service implements ServiceInterface {
                     secretOrKey: process.env.JWT_SECRET,
                     jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
                 },
-                (req: express.Request, payload: PublicUserModel, done: VerifiedCallback) =>
-                    this.validateJwt,
+                (payload: PublicUserModel, done: VerifiedCallback) =>
+                    this.validateJwt(payload, done),
             ),
         );
         passport.use(
@@ -102,7 +155,6 @@ export default class Service implements ServiceInterface {
                     usernameField: 'email',
                     passwordField: 'password',
                     session: false,
-                    passReqToCallback: false,
                 },
                 (
                     username: string,
@@ -112,6 +164,7 @@ export default class Service implements ServiceInterface {
             ),
         );
         this.app.use(passport.initialize());
+        this.loginMiddleware = passport.authenticate('local', {session: false});
         this.authMiddleware = passport.authenticate('jwt', {session: false});
 
         this.app.use((req: RequestContext, res: express.Response, next: express.NextFunction) =>
@@ -163,11 +216,7 @@ export default class Service implements ServiceInterface {
      * @param payload
      * @param done
      */
-    private async validateJwt(
-        req: express.Request,
-        payload: PublicUserModel,
-        done: VerifiedCallback,
-    ) {
+    private async validateJwt(payload: PublicUserModel, done: VerifiedCallback) {
         if (!payload || !payload.id) {
             done(null, false);
         } else {
@@ -179,13 +228,13 @@ export default class Service implements ServiceInterface {
                 const user = JSON.parse(cachedRawUser);
                 done(null, user);
             } else {
-                const userResult = await this.db.collection<UserModel>(USER_COLLECTION).findOne({
-                    id: userId,
-                });
+                const userResult = await this.db
+                    .collection<UserModel>(USER_COLLECTION)
+                    .findOne(new ObjectId(userId));
 
                 if (userResult) {
                     const publicUser = {
-                        id: userResult.id,
+                        id: userResult.id || userResult._id,
                         email: userResult.email,
                     };
                     done(null, publicUser);
@@ -223,7 +272,7 @@ export default class Service implements ServiceInterface {
                                     done(new NotAuthorized('Not Authorized'));
                                 } else {
                                     const publicUser = {
-                                        id: user.id,
+                                        id: user.id || user._id || '',
                                         email: user.email,
                                     };
                                     done(null, publicUser);

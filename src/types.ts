@@ -15,8 +15,9 @@ export interface RequestContext extends Request {
 }
 
 export interface UserModel {
+    _id?: string;
     email: string;
-    id: string;
+    id?: string;
     password: string;
 }
 
@@ -33,5 +34,10 @@ export interface ServiceInterface {
     cache: RedisClient;
     db: Db;
     loginMiddleware: Middleware;
+    parsers: {[key: string]: Middleware};
     server: Server;
+}
+
+export enum Parsers {
+    JSON = 'application/json',
 }
