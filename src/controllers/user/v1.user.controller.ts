@@ -1,5 +1,6 @@
 import * as bcrypt from 'bcrypt';
 import {NextFunction, Response} from 'express';
+import * as sanitize from 'express-mongo-sanitize';
 import {body, validationResult} from 'express-validator/check';
 import * as HttpStatus from 'http-status-codes';
 import * as jwt from 'jsonwebtoken';
@@ -15,6 +16,7 @@ export default class V1UserController extends Controller {
 
         this.routes.post(
             '/create',
+            sanitize(),
             this.service.parsers[Parsers.JSON],
             [
                 body('email')
@@ -29,6 +31,7 @@ export default class V1UserController extends Controller {
 
         this.routes.post(
             '/login',
+            sanitize(),
             this.service.parsers[Parsers.JSON],
             [
                 body('email')
@@ -62,15 +65,15 @@ export default class V1UserController extends Controller {
                     process.env.BCRYPT_SALT || DEFAULT_SALT,
                     async (err: Error, hash: string) => {
                         const insertResult = await this.service.db
-                            .collection<UserModel>(USER_COLLECTION)
+                            .collection<Partial<UserModel>>(USER_COLLECTION)
                             .insertOne({
                                 email: req.body.email,
                                 password: hash,
                             });
 
-                        const newUser = insertResult.ops[0];
+                        const newUser: UserModel = insertResult.ops[0];
                         const publicUser: PublicUserModel = {
-                            id: newUser._id,
+                            id: (newUser._id && newUser._id.toHexString()) || '',
                             email: newUser.email,
                         };
                         res.status(HttpStatus.OK).json(publicUser);

@@ -15,7 +15,7 @@ import bodyParser = require('body-parser');
 import {CACHED_USER_KEY, TASK_DB_NAME, USER_COLLECTION} from './constants';
 import {BaseController} from './controllers/BaseController';
 import Controller from './models/Controller';
-import {HttpError, NotAcceptable, NotAuthorized} from './models/HttpErrors';
+import {HttpError, NotAcceptable, NotAuthorized, NotFound} from './models/HttpErrors';
 import {HttpStatus} from './models/HttpStatus';
 import {
     Middleware,
@@ -172,7 +172,11 @@ export default class Service implements ServiceInterface {
                         namespace: 'task-service.service.auth.local',
                         message: err.message,
                     });
-                    res.status(HttpStatus.NotAuthorized).json({error: 'Not Authorized'});
+                    if (err instanceof HttpError) {
+                        res.status(err.statusCode).json({error: err.message});
+                    } else {
+                        res.status(HttpStatus.NotAuthorized).json({error: 'Not Authorized'});
+                    }
                 } else if (!user) {
                     res.status(HttpStatus.NotAuthorized).json({error: 'Not Authorized'});
                 } else {
@@ -188,7 +192,11 @@ export default class Service implements ServiceInterface {
                         namespace: 'task-service.service.auth.jwt',
                         message: err.message,
                     });
-                    res.status(HttpStatus.NotAuthorized).json({error: 'Not Authorized'});
+                    if (err instanceof HttpError) {
+                        res.status(err.statusCode).json({error: err.message});
+                    } else {
+                        res.status(HttpStatus.NotAuthorized).json({error: 'Not Authorized'});
+                    }
                 } else if (!user) {
                     res.status(HttpStatus.NotAuthorized).json({error: 'Not Authorized'});
                 } else {
@@ -299,24 +307,27 @@ export default class Service implements ServiceInterface {
             done(new NotAcceptable('Missing password'));
         } else {
             try {
-                const user = await this.db.collection<UserModel>(USER_COLLECTION).findOne({
+                const user = await this.db.collection<Partial<UserModel>>(USER_COLLECTION).findOne({
                     email,
                 });
 
-                if (user) {
+                if (!user) {
+                    done(new NotFound('User does not exist'));
+                } else {
+                    user.id = (user._id && user._id.toHexString()) || '';
                     try {
                         bcrypt.compare(
                             password,
-                            user.password,
+                            user.password || '',
                             (bcryptErr: Error, res: boolean) => {
                                 if (bcryptErr) {
                                     done(bcryptErr);
                                 } else if (!res) {
                                     done(new NotAuthorized('Not Authorized'));
                                 } else {
-                                    const publicUser = {
-                                        id: user.id || user._id || '',
-                                        email: user.email,
+                                    const publicUser: PublicUserModel = {
+                                        id: user.id || '',
+                                        email: user.email || '',
                                     };
                                     done(null, publicUser);
                                 }

@@ -1,8 +1,9 @@
 import {Server} from 'http';
 
 import {Application, NextFunction, Request, Response} from 'express';
-import {Db} from 'mongodb';
+import {Db, ObjectId} from 'mongodb';
 import {RedisClient} from 'redis';
+import V1StatusController from './controllers/status/v1.status.controller';
 
 export interface RequestContext extends Request {
     context: {
@@ -14,10 +15,8 @@ export interface RequestContext extends Request {
     };
 }
 
-export interface UserModel {
-    _id?: string;
-    email: string;
-    id?: string;
+export interface UserModel extends PublicUserModel {
+    _id?: ObjectId;
     password: string;
 }
 
@@ -45,4 +44,20 @@ export interface ServiceInterface {
 
 export enum Parsers {
     JSON = 'application/json',
+}
+
+export enum TaskStatus {
+    NEW = 'new',
+    COMPLETED = 'completed',
+}
+export interface PublicTaskModel {
+    description: string;
+    id: string;
+    name: string;
+    status: TaskStatus;
+}
+
+export interface TaskModel extends PublicTaskModel {
+    _id?: ObjectId;
+    userId: ObjectId;
 }
