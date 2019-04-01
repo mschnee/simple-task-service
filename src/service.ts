@@ -16,6 +16,7 @@ import {CACHED_USER_KEY, TASK_DB_NAME, USER_COLLECTION} from './constants';
 import {BaseController} from './controllers/BaseController';
 import Controller from './models/Controller';
 import {HttpError, NotAcceptable, NotAuthorized} from './models/HttpErrors';
+import {HttpStatus} from './models/HttpStatus';
 import {
     Middleware,
     Parsers,
@@ -164,8 +165,38 @@ export default class Service implements ServiceInterface {
             ),
         );
         this.app.use(passport.initialize());
-        this.loginMiddleware = passport.authenticate('local', {session: false});
-        this.authMiddleware = passport.authenticate('jwt', {session: false});
+        this.loginMiddleware = (req, res, next) => {
+            passport.authenticate('local', {session: false}, (err, user, info) => {
+                if (err) {
+                    console.error({
+                        namespace: 'task-service.service.auth.local',
+                        message: err.message,
+                    });
+                    res.status(HttpStatus.NotAuthorized).json({error: 'Not Authorized'});
+                } else if (!user) {
+                    res.status(HttpStatus.NotAuthorized).json({error: 'Not Authorized'});
+                } else {
+                    req.user = user;
+                    next();
+                }
+            })(req, res, next);
+        };
+        this.authMiddleware = (req, res, next) => {
+            passport.authenticate('jwt', {session: false}, (err, user, info) => {
+                if (err) {
+                    console.error({
+                        namespace: 'task-service.service.auth.jwt',
+                        message: err.message,
+                    });
+                    res.status(HttpStatus.NotAuthorized).json({error: 'Not Authorized'});
+                } else if (!user) {
+                    res.status(HttpStatus.NotAuthorized).json({error: 'Not Authorized'});
+                } else {
+                    req.user = user;
+                    next();
+                }
+            })(req, res, next);
+        };
 
         this.app.use((req: RequestContext, res: express.Response, next: express.NextFunction) =>
             this.installServerContext(req, res, next),
@@ -187,6 +218,18 @@ export default class Service implements ServiceInterface {
                 console.log({
                     message: `Listening on ${this.port}`,
                     namespace: 'task-service.service.start',
+                });
+                resolve();
+            });
+        });
+    }
+
+    public async stop() {
+        return new Promise(resolve => {
+            this.server.close(() => {
+                console.log({
+                    message: `Service has stopped`,
+                    namespace: 'task-service.service.stop',
                 });
                 resolve();
             });

@@ -28,8 +28,13 @@
     "@types/passport-jwt": "^3.0.1",
     "@types/passport-local": "^1.0.33",
     "@types/redis": "^2.8.12",
+    "@types/superagent": "^4.1.1",
+    "@types/supertest": "^2.0.7",
     "ava": "^1.4.1",
+    "nyc": "^13.3.0",
     "prettyjson": "^1.2.1",
+    "superagent": "^5.0.2",
+    "supertest": "^4.0.2",
     "ts-node": "^8.0.3",
     "tslint": "^5.14.0",
     "tslint-consistent-codestyle": "^1.15.1",
@@ -52,5 +57,14 @@
     "passport-jwt": "^4.0.0",
     "passport-local": "^1.0.0",
     "redis": "^2.8.0"
-  }
+  },
+  "ava": {
+      "compileEnhancements": false,
+      "extensions": [
+        "ts"
+      ],
+      "require": [
+        "ts-node/register"
+      ]
+    }
 }

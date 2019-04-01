@@ -15,6 +15,19 @@
             ],
             "sourceMaps": true,
             "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "IT test current file",
+            "program": "${workspaceFolder}/node_modules/ava/profile.js",
+            "args": [
+              "${file}"
+            ],
+            "skipFiles": [
+                "<node_internals>/**/*.js"
+            ],
+            "envFile": "${workspaceFolder}/.env.test"
         }
     ]
 }

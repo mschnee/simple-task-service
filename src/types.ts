@@ -31,11 +31,16 @@ export declare type Middleware = (req: Request, res: Response, next: NextFunctio
 export interface ServiceInterface {
     app: Application;
     authMiddleware: Middleware;
+    boot: Function;
     cache: RedisClient;
     db: Db;
+    hostname: string;
     loginMiddleware: Middleware;
     parsers: {[key: string]: Middleware};
+    port: number;
     server: Server;
+    start: Function;
+    stop: Function;
 }
 
 export enum Parsers {
