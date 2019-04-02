@@ -16,7 +16,7 @@ import bodyParser = require('body-parser');
 import {CACHED_USER_KEY, TASK_DB_NAME, USER_COLLECTION} from './constants';
 import {BaseController} from './controllers/BaseController';
 import Controller from './models/Controller';
-import {HttpError, NotAcceptable, NotAuthorized, NotFound} from './models/HttpErrors';
+import {HttpError, NotAcceptable, NotAuthorized} from './models/HttpErrors';
 import {
     Middleware,
     Parsers,

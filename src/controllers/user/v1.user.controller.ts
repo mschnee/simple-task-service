@@ -7,7 +7,6 @@ import * as jwt from 'jsonwebtoken';
 
 import {DEFAULT_SALT, USER_COLLECTION} from '../../constants';
 import Controller from '../../models/Controller';
-import {Conflict, NotAuthorized} from '../../models/HttpErrors';
 import {Parsers, PublicUserModel, RequestContext, UserModel} from '../../types';
 
 export default class V1UserController extends Controller {

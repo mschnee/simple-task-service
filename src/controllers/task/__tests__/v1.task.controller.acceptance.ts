@@ -25,17 +25,6 @@ const USER1_TASKS: Array<Partial<PublicTaskModel>> = [
     },
 ];
 
-const USER2_TASKS: Array<Partial<PublicTaskModel>> = [
-    {
-        name: 'user2-task-1',
-        description: 'task 1 for user 2',
-    },
-    {
-        name: 'user2-task-2',
-        description: 'task 2 for user 2',
-    },
-];
-
 interface ServiceContext extends ExecutionContext {
     context: {
         client: supertest.SuperTest<supertest.Test>;
@@ -156,12 +145,6 @@ test("ACL - User1 shouldn't see User2's tasks", async (t: ServiceContext) => {
         .set('Content-Type', 'application/json')
         .set('Authorization', `bearer ${user1Token}`)
         .send(USER1_TASKS[0]);
-
-    const createResponse2 = await t.context.client
-        .post('/v1/task')
-        .set('Content-Type', 'application/json')
-        .set('Authorization', `bearer ${user2Token}`)
-        .send(USER2_TASKS[0]);
 
     // user 2 cannot get user 1's task
     const getResponse1 = await t.context.client

@@ -3,7 +3,6 @@ import {Server} from 'http';
 import {Application, NextFunction, Request, Response} from 'express';
 import {Db, ObjectId} from 'mongodb';
 import {RedisClient} from 'redis';
-import V1StatusController from './controllers/status/v1.status.controller';
 
 export interface RequestContext extends Request {
     context: {
