@@ -5,6 +5,7 @@ import * as bcrypt from 'bcrypt';
 import * as express from 'express';
 import getPort from 'get-port';
 import * as helmet from 'helmet';
+import * as HttpStatus from 'http-status-codes';
 import {Db, MongoClient, ObjectId} from 'mongodb';
 import * as passport from 'passport';
 import {ExtractJwt, Strategy as JwtStrategy, VerifiedCallback} from 'passport-jwt';
@@ -16,7 +17,6 @@ import {CACHED_USER_KEY, TASK_DB_NAME, USER_COLLECTION} from './constants';
 import {BaseController} from './controllers/BaseController';
 import Controller from './models/Controller';
 import {HttpError, NotAcceptable, NotAuthorized, NotFound} from './models/HttpErrors';
-import {HttpStatus} from './models/HttpStatus';
 import {
     Middleware,
     Parsers,
@@ -166,44 +166,60 @@ export default class Service implements ServiceInterface {
         );
         this.app.use(passport.initialize());
         this.loginMiddleware = (req, res, next) => {
-            passport.authenticate('local', {session: false}, (err, user, info) => {
-                if (err) {
-                    console.error({
-                        namespace: 'task-service.service.auth.local',
-                        message: err.message,
-                    });
-                    if (err instanceof HttpError) {
-                        res.status(err.statusCode).json({error: err.message});
+            try {
+                passport.authenticate('local', {session: false}, (err, user, info) => {
+                    if (err) {
+                        console.error({
+                            namespace: 'task-service.service.auth.local',
+                            message: err.message,
+                        });
+                        if (err instanceof HttpError) {
+                            res.status(err.statusCode).json({error: err.message});
+                        } else {
+                            res.status(HttpStatus.UNAUTHORIZED).json({error: 'Not Authorized'});
+                        }
+                    } else if (!user) {
+                        res.status(HttpStatus.UNAUTHORIZED).json({error: 'Not Authorized'});
                     } else {
-                        res.status(HttpStatus.NotAuthorized).json({error: 'Not Authorized'});
+                        req.user = user;
+                        next();
                     }
-                } else if (!user) {
-                    res.status(HttpStatus.NotAuthorized).json({error: 'Not Authorized'});
+                })(req, res, next);
+            } catch (e) {
+                if (e instanceof HttpError) {
+                    res.status(e.statusCode).json({error: e.message});
                 } else {
-                    req.user = user;
-                    next();
+                    res.status(HttpStatus.UNAUTHORIZED);
                 }
-            })(req, res, next);
+            }
         };
         this.authMiddleware = (req, res, next) => {
-            passport.authenticate('jwt', {session: false}, (err, user, info) => {
-                if (err) {
-                    console.error({
-                        namespace: 'task-service.service.auth.jwt',
-                        message: err.message,
-                    });
-                    if (err instanceof HttpError) {
-                        res.status(err.statusCode).json({error: err.message});
+            try {
+                passport.authenticate('jwt', {session: false}, (err, user, info) => {
+                    if (err) {
+                        console.error({
+                            namespace: 'task-service.service.auth.jwt',
+                            message: err.message,
+                        });
+                        if (err instanceof HttpError) {
+                            res.status(err.statusCode).json({error: err.message});
+                        } else {
+                            res.status(HttpStatus.UNAUTHORIZED).json({error: 'Not Authorized'});
+                        }
+                    } else if (!user) {
+                        res.status(HttpStatus.UNAUTHORIZED).json({error: 'Not Authorized'});
                     } else {
-                        res.status(HttpStatus.NotAuthorized).json({error: 'Not Authorized'});
+                        req.user = user;
+                        next();
                     }
-                } else if (!user) {
-                    res.status(HttpStatus.NotAuthorized).json({error: 'Not Authorized'});
+                })(req, res, next);
+            } catch (e) {
+                if (e instanceof HttpError) {
+                    res.status(e.statusCode).json({error: e.message});
                 } else {
-                    req.user = user;
-                    next();
+                    res.status(HttpStatus.UNAUTHORIZED);
                 }
-            })(req, res, next);
+            }
         };
 
         this.app.use((req: RequestContext, res: express.Response, next: express.NextFunction) =>
@@ -312,7 +328,7 @@ export default class Service implements ServiceInterface {
                 });
 
                 if (!user) {
-                    done(new NotFound('User does not exist'));
+                    done(new NotAuthorized('User does not exist'));
                 } else {
                     user.id = (user._id && user._id.toHexString()) || '';
                     try {

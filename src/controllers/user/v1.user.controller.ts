@@ -31,6 +31,10 @@ export default class V1UserController extends Controller {
 
         this.routes.post(
             '/login',
+            (req: RequestContext, res: Response, next: NextFunction) => {
+                console.log('in login');
+                next();
+            },
             sanitize(),
             this.service.parsers[Parsers.JSON],
             [
