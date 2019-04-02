@@ -14,14 +14,17 @@ const TEST_PASSWORD1 = 'iamaprettyp4ssw04d!';
 const TEST_USERNAME2 = '__testemail__v1_task_user2@test.com';
 const TEST_PASSWORD2 = 'iamaprettierp4ssw04d!';
 
+const NOW_STRING = new Date().toISOString();
 const USER1_TASKS: Array<Partial<PublicTaskModel>> = [
     {
         name: 'user1-task-1',
         description: 'task 1 for user 1',
+        dueDate: NOW_STRING,
     },
     {
         name: 'user1-task-2',
         description: 'task 2 for user 1',
+        dueDate: NOW_STRING,
     },
 ];
 

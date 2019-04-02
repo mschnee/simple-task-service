@@ -74,6 +74,10 @@ export default class V1TaskController extends Controller {
                     .isEmpty()
                     .trim()
                     .escape(),
+                body('dueDate')
+                    .isISO8601()
+                    .not()
+                    .isEmpty(),
             ],
             this.postTask.bind(this),
         );
@@ -103,6 +107,7 @@ export default class V1TaskController extends Controller {
                         .trim()
                         .escape(),
                 ]),
+                oneOf([body('dueDate').isEmpty(), body('dueDate').isISO8601()]),
                 oneOf([
                     body('status').isEmpty(),
                     body('status').isIn([TaskStatus.NEW, TaskStatus.COMPLETED]),
@@ -136,6 +141,7 @@ export default class V1TaskController extends Controller {
                 description: req.body.description,
                 status: TaskStatus.NEW,
                 userId: new ObjectId(req.user.id),
+                dueDate: req.body.dueDate,
             };
 
             const insertResult = await this.service.db

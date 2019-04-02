@@ -58,6 +58,7 @@ export enum TaskStatusV2 {
 
 export interface PublicTaskModel {
     description: string;
+    dueDate: string; // ISO 8601 format
     id: string;
     name: string;
     status: TaskStatus;

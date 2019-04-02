@@ -8,5 +8,6 @@ export default function toPublicTask(
         description: task.description || '',
         name: task.name || '',
         status: task.status,
+        dueDate: task.dueDate,
     };
 }

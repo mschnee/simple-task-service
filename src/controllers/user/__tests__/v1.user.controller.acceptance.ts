@@ -33,7 +33,7 @@ test.after(async (t: ServiceContext) => {
     await t.context.service.stop();
 });
 
-test('Shouldnt log into a non-existant usar', async (t: ServiceContext) => {
+test('Shouldnt log into a non-existant user', async (t: ServiceContext) => {
     const loginResponse = await t.context.client
         .post('/v1/user/login')
         .set('Content-Type', 'application/json')
