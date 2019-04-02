@@ -163,3 +163,36 @@ test("ACL - User1 shouldn't see User2's tasks", async (t: ServiceContext) => {
 
     t.is(getResponse2.status, HttpStatus.OK);
 });
+
+test('Create and delete a task', async (t: ServiceContext) => {
+    const user1Token = await createUserAndGetToken(
+        t.context.client,
+        TEST_USERNAME1,
+        TEST_PASSWORD1,
+    );
+
+    const createResponse1 = await t.context.client
+        .post('/v1/task')
+        .set('Content-Type', 'application/json')
+        .set('Authorization', `bearer ${user1Token}`)
+        .send(USER1_TASKS[0]);
+
+    // user 1 can still get user 1's task
+    const getResponse1 = await t.context.client
+        .get(`/v1/task/${createResponse1.body.id}`)
+        .set('Authorization', `bearer ${user1Token}`);
+
+    t.is(getResponse1.status, HttpStatus.OK);
+
+    const deleteResponse = await t.context.client
+        .delete(`/v1/task/${createResponse1.body.id}`)
+        .set('Authorization', `bearer ${user1Token}`);
+
+    t.is(deleteResponse.status, HttpStatus.NO_CONTENT);
+
+    const getResponse2 = await t.context.client
+        .get(`/v1/task/${createResponse1.body.id}`)
+        .set('Authorization', `bearer ${user1Token}`);
+
+    t.is(getResponse2.status, HttpStatus.NOT_FOUND);
+});

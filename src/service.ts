@@ -78,6 +78,7 @@ export default class Service implements ServiceInterface {
                         time: elapsedTime,
                         status: res.statusCode,
                         url: req.originalUrl,
+                        method: req.method,
                     },
                 });
             });
@@ -90,6 +91,7 @@ export default class Service implements ServiceInterface {
                         time: elapsedTime,
                         status: res.statusCode,
                         url: req.originalUrl,
+                        method: req.method,
                     },
                 });
             });

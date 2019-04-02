@@ -13,7 +13,6 @@
         "moduleResolution": "node",
         "target": "es2017",
         "sourceMap": true,
-        "sourceRoot": "./src",
         "declaration": true,
         "rootDir": "src",
         "outDir": "./dist"
