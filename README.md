@@ -30,3 +30,11 @@ itself using supertest, and then bring down the environment and destroy the volu
 ```sh
 npm run it
 ```
+
+# Running it
+
+Use can use the command `npm run dev`, which will automatically create the docker environment, build, and start the application.
+
+# Debugging
+
+Start with bringing up the environment with `npm run dev:before`, and then use the VSCode `Launch Program` task

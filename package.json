@@ -7,6 +7,8 @@
     "clean": "rimraf ./dist",
     "build": "npm run clean && tsc -p .",
     "start": "env-cmd ./.env node .",
+    "dev": "run-s -c dev:before build start",
+    "dev:before": "docker-compose -f docker-compose.yml up -d --build",
     "preit": "npm run clean && npm run build",
     "lint": "tslint -p .",
     "it:before": "docker-compose  -f docker-compose.test.yml up -d --build ",
