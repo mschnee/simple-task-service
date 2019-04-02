@@ -49,6 +49,13 @@ export enum TaskStatus {
     NEW = 'new',
     COMPLETED = 'completed',
 }
+
+export enum TaskStatusV2 {
+    NEW = 'new',
+    IN_PROGRESS = 'in-progress',
+    COMPLETED = 'completed',
+}
+
 export interface PublicTaskModel {
     description: string;
     id: string;
@@ -57,6 +64,18 @@ export interface PublicTaskModel {
 }
 
 export interface TaskModel extends PublicTaskModel {
+    _id?: ObjectId;
+    userId: ObjectId;
+}
+
+export interface PublicTaskModelV2 {
+    description: string;
+    id: string;
+    name: string;
+    status: TaskStatus;
+}
+
+export interface TaskModelV2 extends PublicTaskModel {
     _id?: ObjectId;
     userId: ObjectId;
 }

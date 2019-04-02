@@ -1,4 +1,4 @@
-import {NextFunction, Response} from 'express';
+import {NextFunction, Response, Router} from 'express';
 import * as sanitize from 'express-mongo-sanitize';
 import {body, check, oneOf, validationResult} from 'express-validator/check';
 import * as HttpStatus from 'http-status-codes';
@@ -6,81 +6,13 @@ import {ObjectId} from 'mongodb';
 
 import {TASK_COLLECTION} from '../../constants';
 import Controller from '../../models/Controller';
-import {Parsers, PublicTaskModel, RequestContext, TaskModel, TaskStatus} from '../../types';
+import {Parsers, RequestContext, TaskModel, TaskStatus} from '../../types';
 
-function toPublicTask(task: TaskModel): PublicTaskModel {
-    return {
-        id: (task._id && task._id.toHexString()) || '',
-        description: task.description || '',
-        name: task.name || '',
-        status: task.status,
-    };
-}
+import toPublicTask from './lib/to-public-task';
 
 export default class V1TaskController extends Controller {
-    constructor(parent: Controller) {
-        super(parent);
-
-        this.routes.get(
-            '/:taskId',
-            this.service.authMiddleware,
-            [check('taskId').isMongoId()],
-            this.getAuthorizedTask.bind(this),
-            this.getTask.bind(this),
-        );
-
-        this.routes.get('/', this.service.authMiddleware, this.getAllTasks.bind(this));
-        this.routes.post(
-            '/',
-            sanitize(),
-            this.service.authMiddleware,
-            this.service.parsers[Parsers.JSON],
-            [
-                body('name')
-                    .isString()
-                    .not()
-                    .isEmpty()
-                    .trim()
-                    .escape(),
-                body('description')
-                    .isString()
-                    .not()
-                    .isEmpty()
-                    .trim()
-                    .escape(),
-            ],
-            this.postTask.bind(this),
-        );
-
-        this.routes.put(
-            '/:taskId',
-            sanitize(),
-            this.service.authMiddleware,
-            this.service.parsers[Parsers.JSON],
-            [
-                check('taskId').isMongoId(),
-                oneOf([
-                    body('name').isEmpty(),
-                    body('name')
-                        .isString()
-                        .trim()
-                        .escape(),
-                ]),
-                oneOf([
-                    body('description').isEmpty(),
-                    body('description')
-                        .isString()
-                        .trim()
-                        .escape(),
-                ]),
-                oneOf([
-                    body('status').isEmpty(),
-                    body('status').isIn([TaskStatus.NEW, TaskStatus.COMPLETED]),
-                ]),
-            ],
-            this.getAuthorizedTask.bind(this),
-            this.updateTask.bind(this),
-        );
+    constructor(parent: Controller, routes = Router()) {
+        super(parent, routes);
     }
 
     public async getAllTasks(req: RequestContext, res: Response, next: NextFunction) {
@@ -112,6 +44,75 @@ export default class V1TaskController extends Controller {
             }
             previous = item;
         });
+    }
+
+    public getRoutes(routes = Router()) {
+        routes.get(
+            '/:taskId',
+            this.service.authMiddleware,
+            [check('taskId').isMongoId()],
+            this.getAuthorizedTask.bind(this),
+            this.getTask.bind(this),
+        );
+
+        routes.get('/', this.service.authMiddleware, this.getAllTasks.bind(this));
+        routes.post(
+            '/',
+            sanitize(),
+            this.service.authMiddleware,
+            this.service.parsers[Parsers.JSON],
+            [
+                body('name')
+                    .isString()
+                    .not()
+                    .isEmpty()
+                    .trim()
+                    .escape(),
+                body('description')
+                    .isString()
+                    .not()
+                    .isEmpty()
+                    .trim()
+                    .escape(),
+            ],
+            this.postTask.bind(this),
+        );
+
+        routes.put(
+            '/:taskId',
+            (req: RequestContext, res: Response, next: NextFunction) => {
+                console.log('in v1 put');
+                next();
+            },
+            sanitize(),
+            this.service.authMiddleware,
+            this.service.parsers[Parsers.JSON],
+            [
+                check('taskId').isMongoId(),
+                oneOf([
+                    body('name').isEmpty(),
+                    body('name')
+                        .isString()
+                        .trim()
+                        .escape(),
+                ]),
+                oneOf([
+                    body('description').isEmpty(),
+                    body('description')
+                        .isString()
+                        .trim()
+                        .escape(),
+                ]),
+                oneOf([
+                    body('status').isEmpty(),
+                    body('status').isIn([TaskStatus.NEW, TaskStatus.COMPLETED]),
+                ]),
+            ],
+            this.getAuthorizedTask.bind(this),
+            this.updateTask.bind(this),
+        );
+
+        return routes;
     }
 
     public getTask(req: RequestContext, res: Response, next: NextFunction) {
@@ -210,7 +211,7 @@ export default class V1TaskController extends Controller {
      * @param res
      * @param next
      */
-    private async getAuthorizedTask(req: RequestContext, res: Response, next: NextFunction) {
+    protected async getAuthorizedTask(req: RequestContext, res: Response, next: NextFunction) {
         const validationErrors = validationResult(req);
         if (!validationErrors.isEmpty()) {
             res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({errors: validationErrors.array()});

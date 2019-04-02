@@ -1,12 +1,12 @@
 import {Router} from 'express';
 import {ServiceInterface} from '../types';
 
-export default class Controller {
-    public routes: Router;
+export default abstract class Controller {
     public service: ServiceInterface;
 
-    constructor(parent: Controller | ServiceInterface) {
+    constructor(parent: Controller | ServiceInterface, routes: Router = Router()) {
         this.service = (parent as Controller).service || parent;
-        this.routes = Router();
     }
+
+    public abstract getRoutes(router?: Router): Router;
 }

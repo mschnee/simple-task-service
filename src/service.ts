@@ -227,7 +227,7 @@ export default class Service implements ServiceInterface {
         );
 
         this.baseController = new BaseController(this);
-        this.app.use(this.baseController.routes);
+        this.app.use(this.baseController.getRoutes());
     }
 
     public async start() {

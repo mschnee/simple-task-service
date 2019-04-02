@@ -1,5 +1,5 @@
 import * as bcrypt from 'bcrypt';
-import {NextFunction, Response} from 'express';
+import {NextFunction, Response, Router} from 'express';
 import * as sanitize from 'express-mongo-sanitize';
 import {body, validationResult} from 'express-validator/check';
 import * as HttpStatus from 'http-status-codes';
@@ -12,42 +12,6 @@ import {Parsers, PublicUserModel, RequestContext, UserModel} from '../../types';
 export default class V1UserController extends Controller {
     constructor(parent: Controller) {
         super(parent);
-
-        this.routes.post(
-            '/create',
-            sanitize(),
-            this.service.parsers[Parsers.JSON],
-            [
-                body('email')
-                    .isEmail()
-                    .normalizeEmail(),
-                body('password')
-                    .isString()
-                    .isLength({min: 12, max: 2048}),
-            ],
-            this.create.bind(this),
-        );
-
-        this.routes.post(
-            '/login',
-            (req: RequestContext, res: Response, next: NextFunction) => {
-                next();
-            },
-            sanitize(),
-            this.service.parsers[Parsers.JSON],
-            [
-                body('email')
-                    .isEmail()
-                    .normalizeEmail(),
-                body('password')
-                    .isString()
-                    .isLength({min: 12, max: 2048}),
-            ],
-            this.service.loginMiddleware,
-            this.login.bind(this),
-        );
-
-        this.routes.get('/whoami', this.service.authMiddleware, this.whoami.bind(this));
     }
 
     public async create(req: RequestContext, res: Response, next: NextFunction) {
@@ -83,6 +47,46 @@ export default class V1UserController extends Controller {
                 );
             }
         }
+    }
+
+    public getRoutes(routes = Router()) {
+        routes.post(
+            '/create',
+            sanitize(),
+            this.service.parsers[Parsers.JSON],
+            [
+                body('email')
+                    .isEmail()
+                    .normalizeEmail(),
+                body('password')
+                    .isString()
+                    .isLength({min: 12, max: 2048}),
+            ],
+            this.create.bind(this),
+        );
+
+        routes.post(
+            '/login',
+            (req: RequestContext, res: Response, next: NextFunction) => {
+                next();
+            },
+            sanitize(),
+            this.service.parsers[Parsers.JSON],
+            [
+                body('email')
+                    .isEmail()
+                    .normalizeEmail(),
+                body('password')
+                    .isString()
+                    .isLength({min: 12, max: 2048}),
+            ],
+            this.service.loginMiddleware,
+            this.login.bind(this),
+        );
+
+        routes.get('/whoami', this.service.authMiddleware, this.whoami.bind(this));
+
+        return routes;
     }
 
     public async login(req: RequestContext, res: Response, next: NextFunction) {

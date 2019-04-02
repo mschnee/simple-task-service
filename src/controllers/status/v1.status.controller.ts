@@ -1,6 +1,6 @@
 import {promisify} from 'util';
 
-import {NextFunction, Response} from 'express';
+import {NextFunction, Response, Router} from 'express';
 import * as HttpStatus from 'http-status-codes';
 import {ServerInfo} from 'redis';
 
@@ -10,7 +10,12 @@ import {RequestContext} from '../../types';
 export default class V1StatusController extends Controller {
     constructor(parent: Controller) {
         super(parent);
-        this.routes.get('/', this.getStats.bind(this));
+    }
+
+    public getRoutes(router = Router()) {
+        router.get('/', this.getStats.bind(this));
+
+        return router;
     }
 
     public async getStats(req: RequestContext, res: Response, next: NextFunction) {
