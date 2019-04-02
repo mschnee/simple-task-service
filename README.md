@@ -25,6 +25,7 @@ GET /v1/task
 GET /v1/task/:id
 POST /v1/task
 PUT /v1/task/:id
+DELETE /v1/task/:id
 ```
 
 # Testing
