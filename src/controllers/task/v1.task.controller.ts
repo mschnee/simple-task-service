@@ -87,6 +87,25 @@ export default class V1TaskController extends Controller {
             this.getAuthorizedTask.bind(this),
             this.updateTask.bind(this),
         );
+
+        this.routes.delete(
+            '/:taskId',
+            this.service.authMiddleware,
+            this.getAuthorizedTask.bind(this),
+            this.deleteTask.bind(this),
+        );
+    }
+
+    public async deleteTask(req: RequestContext, res: Response, next: NextFunction) {
+        const dbTask: TaskModel = res.locals.task;
+        if (!dbTask) {
+            res.status(HttpStatus.NOT_FOUND).end();
+        } else {
+            await this.service.db
+                .collection<Partial<TaskModel>>(TASK_COLLECTION)
+                .deleteOne({_id: new ObjectId(req.params.taskId)});
+            res.status(HttpStatus.NO_CONTENT).end();
+        }
     }
 
     public async getAllTasks(req: RequestContext, res: Response, next: NextFunction) {
