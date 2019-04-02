@@ -112,6 +112,32 @@ test('Should let me update the name', async (t: ServiceContext) => {
     t.is(getResponse2.body.name, NEW_NAME);
 });
 
+test('Should not let me set an invalid status', async (t: ServiceContext) => {
+    const user1Token = await createUserAndGetToken(
+        t.context.client,
+        TEST_USERNAME1,
+        TEST_PASSWORD1,
+    );
+
+    const NEW_STATUS = 'in-progress';
+
+    const createResponse = await t.context.client
+        .post('/v1/task')
+        .set('Content-Type', 'application/json')
+        .set('Authorization', `bearer ${user1Token}`)
+        .send(USER1_TASKS[0]);
+
+    t.is(createResponse.status, HttpStatus.OK);
+    t.truthy(createResponse.body.id);
+
+    const updateResponse = await t.context.client
+        .put(`/v1/task/${createResponse.body.id}`)
+        .set('Authorization', `bearer ${user1Token}`)
+        .send({status: NEW_STATUS});
+
+    t.is(updateResponse.status, HttpStatus.UNPROCESSABLE_ENTITY);
+});
+
 test("ACL - User1 shouldn't see User2's tasks", async (t: ServiceContext) => {
     const user1Token = await createUserAndGetToken(
         t.context.client,
