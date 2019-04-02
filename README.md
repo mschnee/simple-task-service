@@ -13,11 +13,18 @@ Dependencies:
 Unlike the loopback version, there is no OpenAPI explorer at `http://localhost:3000/explorer`, however the
 basic api interfaces are the same:
 
+You can import [this Postman Collection](./doc/TaskService.postman_collection.json) (you will need to update the authorization headers)
+
 ```
 GET /v1/stats
 GET /v1/user/whoami
 POST /v1/user/create
 POST /v1/user/login
+
+GET /v1/task
+GET /v1/task/:id
+POST /v1/task
+PUT /v1/task/:id
 ```
 
 # Testing
