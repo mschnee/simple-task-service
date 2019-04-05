@@ -9,6 +9,7 @@ Dependencies:
 -   [docker](https://www.docker.com/get-started)
 -   [NodeJS](https://nodejs.org)
 -   `npm run install`
+-   `cp env.example .env && cp env.example .env.test`
 
 Unlike the loopback version, there is no OpenAPI explorer at `http://localhost:3000/explorer`, however the
 basic api interfaces are the same:
